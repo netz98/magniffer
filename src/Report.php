@@ -23,6 +23,11 @@ class Report
     protected $tableHelper;
 
     /**
+     * @var string
+     */
+    protected $treeXmlContent;
+
+    /**
      * @todo use config object
      * @param array $params
      */
@@ -48,12 +53,28 @@ class Report
     }
 
     /**
+     * @param string $content
+     */
+    public function setTreeXmlContent($content)
+    {
+        $this->treeXmlContent = $content;
+    }
+
+    /**
      * @param $issue
      */
     protected function renderIssue($issue)
     {
         $this->tableHelper->addRow(array_intersect_key(array_merge($this->config['displayed-columns'], $issue),
             $this->config['displayed-columns']));
+    }
+
+    /**
+     * @param OutputInterface $output
+     */
+    protected function renderXmlTree(OutputInterface $output)
+    {
+        $output->writeln($this->treeXmlContent, OutputInterface::OUTPUT_RAW);
     }
 
     /**
@@ -102,6 +123,11 @@ class Report
                     $this->renderIssueWithSource($issue);
                 }
             }
+
+            if (!empty($this->treeXmlContent)) {
+                $this->renderXmlTree($output);
+            }
+
             $this->tableHelper->render($output);
             $this->tableHelper->setRows(array());
         }

@@ -38,15 +38,22 @@ class Php extends Inspector
     protected $contentArray = array();
 
     /**
+     * @var bool
+     */
+    private $printTree;
+
+    /**
      * @param array $patterns
      * @param Report $report
+     * @param bool $printTree
      */
-    public function __construct(array $patterns, Report $report)
+    public function __construct(array $patterns, Report $report, $printTree = false)
     {
         parent::__construct($patterns, $report);
         $this->dom        = new DOMDocument();
         $this->parser     = new PhpParser\Parser(new PhpParser\Lexer\Emulative);
         $this->serializer = new PhpParser\Serializer\XML;
+        $this->printTree = $printTree;
     }
 
     /**
@@ -114,7 +121,19 @@ class Php extends Inspector
     public function parse()
     {
         $this->contentArray = file($this->file->getRealPath());
-        $this->simpleXml = new SimpleXMLElement($this->serializer->serialize($this->parser->parse(implode('', $this->contentArray))));
+
+        $serializedXmlTree = $this->serializer->serialize(
+            $this->parser->parse(implode('', $this->contentArray))
+        );
+
+        if ($this->printTree) {
+            $this->report->setTreeXmlContent($serializedXmlTree);
+        }
+
+        $this->simpleXml = new SimpleXMLElement(
+            $serializedXmlTree
+        );
+
         return $this;
     }
 
@@ -127,9 +146,11 @@ class Php extends Inspector
         $this->domXpath = new DOMXPath($this->dom);
         foreach ($this->patterns as $pattern) {
             $xpath = $this->simpleXml->xpath($pattern['xpath']);
+
             if (!is_array($xpath)) {
                 throw new InvalidXpathException(sprintf('Invalid XPath "%s" given.', $pattern['xpath']));
             }
+
             foreach ($xpath as $node) {
                 $this->report->addIssue($this->file->getRealPath(), $this->prepareIssue($pattern['xpath'], $node, $pattern));
             }

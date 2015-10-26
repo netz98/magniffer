@@ -21,7 +21,8 @@ class Command extends SymfonyCommand
             ->setDescription('Magniffer Code Inspection Tool')
             ->addArgument('path', InputArgument::REQUIRED, 'Path to code')
             ->addOption('patterns-dir', null, InputOption::VALUE_OPTIONAL, 'Path to patterns directory', __DIR__ . '/../' . 'patterns')
-            ->addOption('show-source', null, InputOption::VALUE_NONE, 'Show source code snippet in the report');
+            ->addOption('show-source', null, InputOption::VALUE_NONE, 'Show source code snippet in the report')
+            ->addOption('print-tree', null, InputOption::VALUE_NONE, 'Show PHP_parser tree');
     }
 
     /**
@@ -68,8 +69,9 @@ class Command extends SymfonyCommand
         $magniffer = new Magniffer($this->getFileIterator($input->getArgument('path'), array('php', 'xml')));
         $patterns  = $this->preparePatterns($input->getOption('patterns-dir'));
 
-        $magniffer->addInspector(new InspectorXml($patterns['xml'], $report))
-            ->addInspector(new InspectorPhp($patterns['php'], $report))
+        $magniffer
+            ->addInspector(new InspectorXml($patterns['xml'], $report))
+            ->addInspector(new InspectorPhp($patterns['php'], $report, $input->getOption('print-tree')))
             ->runInspection();
 
         $report->render($output);
